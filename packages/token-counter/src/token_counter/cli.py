@@ -46,7 +46,10 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Disable the default ignore-set (.git, .venv, node_modules, etc). --ignore names still apply.",
+        help=(
+            "Disable the default ignore-set (.git, .venv, node_modules, etc). "
+            "--ignore names still apply."
+        ),
     )
     return parser
 
