@@ -4,3 +4,7 @@ class TokenCounterError(Exception):
 
 class PathNotFoundError(TokenCounterError, FileNotFoundError):
     """A top-level path argument does not exist."""
+
+
+class UnsortedCountsError(TokenCounterError, ValueError):
+    """A SortedFileTokenCounts was constructed from unsorted input."""

@@ -5,7 +5,7 @@ import io
 import json
 from typing import Literal, assert_never, cast, get_args
 
-from token_counter.counts import SortedCounts
+from token_counter.counts import SortedFileTokenCounts
 from token_counter.errors import TokenCounterError
 
 __all__ = ["OutputFormat", "parse_output_format", "format_counts"]
@@ -30,7 +30,7 @@ def parse_output_format(raw: str) -> OutputFormat:
     return cast(OutputFormat, raw)
 
 
-def format_counts(counts: SortedCounts, fmt: OutputFormat) -> str:
+def format_counts(counts: SortedFileTokenCounts, fmt: OutputFormat) -> str:
     """Render sorted file token counts in the requested format.
 
     `table` includes a total-tokens summary row; `csv` and `json` stay flat
@@ -47,7 +47,7 @@ def format_counts(counts: SortedCounts, fmt: OutputFormat) -> str:
             assert_never(fmt)
 
 
-def _format_table(counts: SortedCounts) -> str:
+def _format_table(counts: SortedFileTokenCounts) -> str:
     total = sum(c.tokens for c in counts)
     token_col_width = max((len(str(c.tokens)) for c in counts), default=0)
     token_col_width = max(token_col_width, len(str(total)))
@@ -56,7 +56,7 @@ def _format_table(counts: SortedCounts) -> str:
     return "\n".join([*rows, total_row])
 
 
-def _format_csv(counts: SortedCounts) -> str:
+def _format_csv(counts: SortedFileTokenCounts) -> str:
     buffer = io.StringIO()
     writer = csv.writer(buffer, lineterminator="\n")
     writer.writerow(["tokens", "path"])
@@ -65,6 +65,6 @@ def _format_csv(counts: SortedCounts) -> str:
     return buffer.getvalue().rstrip("\n")
 
 
-def _format_json(counts: SortedCounts) -> str:
+def _format_json(counts: SortedFileTokenCounts) -> str:
     records = [{"tokens": c.tokens, "path": str(c.path)} for c in counts]
     return json.dumps(records, indent=2)

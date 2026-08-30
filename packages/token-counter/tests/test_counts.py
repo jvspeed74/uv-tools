@@ -3,7 +3,8 @@
 from pathlib import Path
 
 import pytest
-from token_counter.counts import FileTokenCount, sort_file_token_counts_desc
+from token_counter.counts import FileTokenCount, SortedFileTokenCounts, sort_file_token_counts_desc
+from token_counter.errors import UnsortedCountsError
 
 
 @pytest.mark.unit
@@ -34,4 +35,27 @@ def test_sort_file_token_counts_desc_breaks_ties_by_ascending_path() -> None:
 
 @pytest.mark.unit
 def test_sort_file_token_counts_desc_empty_input_returns_empty() -> None:
-    assert sort_file_token_counts_desc([]) == ()
+    assert len(sort_file_token_counts_desc([])) == 0
+
+
+@pytest.mark.unit
+def test_sorted_file_token_counts_rejects_unsorted_input_on_direct_construction() -> None:
+    # The invariant must be enforced at construction, not just documented --
+    # a caller bypassing sort_file_token_counts_desc should still be caught.
+    unsorted = (
+        FileTokenCount(path=Path("a.txt"), tokens=1),
+        FileTokenCount(path=Path("b.txt"), tokens=20),
+    )
+
+    with pytest.raises(UnsortedCountsError):
+        SortedFileTokenCounts(counts=unsorted)
+
+
+@pytest.mark.unit
+def test_sorted_file_token_counts_accepts_correctly_sorted_input() -> None:
+    ordered = (
+        FileTokenCount(path=Path("b.txt"), tokens=20),
+        FileTokenCount(path=Path("a.txt"), tokens=1),
+    )
+
+    SortedFileTokenCounts(counts=ordered)  # must not raise

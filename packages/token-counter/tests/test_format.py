@@ -4,12 +4,12 @@ import json
 from pathlib import Path
 
 import pytest
-from token_counter.counts import FileTokenCount, SortedCounts
+from token_counter.counts import FileTokenCount, SortedFileTokenCounts
 from token_counter.format import InvalidOutputFormatError, format_counts, parse_output_format
 
 
-def _sorted(*items: FileTokenCount) -> SortedCounts:
-    return SortedCounts(tuple(items))
+def _sorted(*items: FileTokenCount) -> SortedFileTokenCounts:
+    return SortedFileTokenCounts(counts=items)
 
 
 @pytest.mark.unit

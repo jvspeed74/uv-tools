@@ -1,11 +1,12 @@
 """Typed record for a file's token count, and the sorted collection type."""
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NewType
 
-__all__ = ["FileTokenCount", "SortedCounts", "sort_file_token_counts_desc"]
+from token_counter.errors import UnsortedCountsError
+
+__all__ = ["FileTokenCount", "SortedFileTokenCounts", "sort_file_token_counts_desc"]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -16,17 +17,39 @@ class FileTokenCount:
     tokens: int
 
 
-SortedCounts = NewType("SortedCounts", tuple[FileTokenCount, ...])
-# Only sort_file_token_counts_desc may produce one. Formatters should require
-# this type instead of a bare tuple[FileTokenCount, ...], so passing unsorted
-# data to them is a type error rather than a latent output bug.
+def _sort_key(count: FileTokenCount) -> tuple[int, Path]:
+    return (-count.tokens, count.path)
 
 
-def sort_file_token_counts_desc(counts: Sequence[FileTokenCount]) -> SortedCounts:
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SortedFileTokenCounts:
+    """FileTokenCount entries validated to be sorted descending by token
+    count (ties broken by ascending path).
+
+    The invariant is checked at construction, on every path -- not only
+    through sort_file_token_counts_desc -- so a caller that constructs one
+    directly from unsorted data gets UnsortedCountsError immediately rather
+    than a type checker's unenforced say-so.
+    """
+
+    counts: tuple[FileTokenCount, ...]
+
+    def __post_init__(self) -> None:
+        if self.counts != tuple(sorted(self.counts, key=_sort_key)):
+            raise UnsortedCountsError(self.counts)
+
+    def __iter__(self) -> Iterator[FileTokenCount]:
+        return iter(self.counts)
+
+    def __len__(self) -> int:
+        return len(self.counts)
+
+
+def sort_file_token_counts_desc(counts: Sequence[FileTokenCount]) -> SortedFileTokenCounts:
     """Sort file token counts descending by token count.
 
     Ties are broken by ascending path, so output is stable and reproducible
     regardless of filesystem enumeration order.
     """
-    ordered = sorted(counts, key=lambda c: (-c.tokens, c.path))
-    return SortedCounts(tuple(ordered))
+    ordered = tuple(sorted(counts, key=_sort_key))
+    return SortedFileTokenCounts(counts=ordered)
