@@ -7,7 +7,7 @@ from pathlib import Path
 
 from token_counter.counts import FileTokenCount, sort_file_token_counts_desc
 from token_counter.errors import PathNotFoundError
-from token_counter.format import format_counts, parse_output_format
+from token_counter.format import OutputFormat, format_counts, parse_output_format
 from token_counter.scan import DEFAULT_IGNORE_NAMES, discover_files, read_text_file
 from token_counter.tokenizer import count_tokens, load_encoding
 
@@ -28,8 +28,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-f",
         "--format",
-        default="table",
-        choices=["table", "csv", "json"],
+        default=OutputFormat.TABLE,
+        choices=list(OutputFormat),
         help="Output format (default: table).",
     )
     parser.add_argument(

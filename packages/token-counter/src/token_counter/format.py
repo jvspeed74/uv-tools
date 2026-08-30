@@ -3,16 +3,21 @@
 import csv
 import io
 import json
-from typing import Literal, assert_never, cast, get_args
+from enum import StrEnum
+from typing import assert_never
 
 from token_counter.counts import SortedFileTokenCounts
 from token_counter.errors import TokenCounterError
 
 __all__ = ["OutputFormat", "parse_output_format", "format_counts"]
 
-OutputFormat = Literal["table", "csv", "json"]
 
-_VALID_FORMATS: frozenset[str] = frozenset(get_args(OutputFormat))
+class OutputFormat(StrEnum):
+    """The supported output formats. Single source of truth for CLI choices."""
+
+    TABLE = "table"
+    CSV = "csv"
+    JSON = "json"
 
 
 class InvalidOutputFormatError(TokenCounterError, ValueError):
@@ -25,9 +30,10 @@ def parse_output_format(raw: str) -> OutputFormat:
     Raises:
         InvalidOutputFormatError: `raw` is not "table", "csv", or "json".
     """
-    if raw not in _VALID_FORMATS:
-        raise InvalidOutputFormatError(raw)
-    return cast(OutputFormat, raw)
+    try:
+        return OutputFormat(raw)
+    except ValueError as exc:
+        raise InvalidOutputFormatError(raw) from exc
 
 
 def format_counts(counts: SortedFileTokenCounts, fmt: OutputFormat) -> str:
@@ -37,11 +43,11 @@ def format_counts(counts: SortedFileTokenCounts, fmt: OutputFormat) -> str:
     per-file records with no injected total.
     """
     match fmt:
-        case "table":
+        case OutputFormat.TABLE:
             return _format_table(counts)
-        case "csv":
+        case OutputFormat.CSV:
             return _format_csv(counts)
-        case "json":
+        case OutputFormat.JSON:
             return _format_json(counts)
         case _:
             assert_never(fmt)

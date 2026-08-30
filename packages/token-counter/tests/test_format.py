@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 from token_counter.counts import FileTokenCount, SortedFileTokenCounts
-from token_counter.format import InvalidOutputFormatError, format_counts, parse_output_format
+from token_counter.format import (
+    InvalidOutputFormatError,
+    OutputFormat,
+    format_counts,
+    parse_output_format,
+)
 
 
 def _sorted(*items: FileTokenCount) -> SortedFileTokenCounts:
@@ -31,7 +36,7 @@ def test_format_table_includes_total_row() -> None:
         FileTokenCount(path=Path("b.txt"), tokens=5),
     )
 
-    lines = format_counts(counts, "table").splitlines()
+    lines = format_counts(counts, OutputFormat.TABLE).splitlines()
 
     assert lines[0].endswith("a.txt")
     assert lines[1].endswith("b.txt")
@@ -46,7 +51,7 @@ def test_format_csv_has_header_and_no_total_row() -> None:
         FileTokenCount(path=Path("b.txt"), tokens=5),
     )
 
-    lines = format_counts(counts, "csv").splitlines()
+    lines = format_counts(counts, OutputFormat.CSV).splitlines()
 
     assert lines[0] == "tokens,path"
     assert lines[1:] == ["10,a.txt", "5,b.txt"]
@@ -57,6 +62,6 @@ def test_format_csv_has_header_and_no_total_row() -> None:
 def test_format_json_is_a_flat_array_with_no_total_field() -> None:
     counts = _sorted(FileTokenCount(path=Path("a.txt"), tokens=10))
 
-    parsed = json.loads(format_counts(counts, "json"))
+    parsed = json.loads(format_counts(counts, OutputFormat.JSON))
 
     assert parsed == [{"tokens": 10, "path": "a.txt"}]
