@@ -1,0 +1,4 @@
+The quick brown fox jumps over the lazy dog. This pangram contains every
+letter of the English alphabet at least once, which makes it useful for
+testing typefaces, keyboards, and — in this case — a token counter's
+behavior against a real, moderately sized block of prose.

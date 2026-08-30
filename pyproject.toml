@@ -1,0 +1,21 @@
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "basedpyright>=1.19",
+    "pytest>=8.3",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.basedpyright]
+include = ["packages/**/src", "packages/**/tests", "packages/**/benches"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
