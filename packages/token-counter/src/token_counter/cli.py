@@ -65,8 +65,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser = _build_arg_parser()
     args = parser.parse_args(argv)
     fmt = parse_output_format(args.format)
-    default_names = frozenset() if args.all else DEFAULT_IGNORE_NAMES
-    ignore_names = frozenset(args.ignore or ()) | default_names
+    default_names: frozenset[str] = frozenset() if args.all else DEFAULT_IGNORE_NAMES
+    ignore_names: frozenset[str] = frozenset(args.ignore or ()) | default_names
 
     try:
         discovered = discover_files(args.paths, ignore_names=ignore_names)
