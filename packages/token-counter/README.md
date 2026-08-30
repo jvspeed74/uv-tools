@@ -78,11 +78,10 @@ tokens,path
 
 - **Non-UTF-8 files** (images, binaries, compiled artifacts) are skipped with a
   warning on stderr — the run continues.
-- **Names passed via `-i`/`--ignore`** are skipped during recursion. There is no
-  default ignore-set — nothing is skipped unless you say so.
+- **Names passed via `-i`/`--ignore`** are skipped during recursion.
 - A path you name **directly** on the command line is always scanned, even if its
   name matches an `--ignore` name — ignoring only applies to what recursion
-  *finds*, not to what you explicitly asked for.
+  *finds under* the target directory you named.
 
 ### Exit codes
 
