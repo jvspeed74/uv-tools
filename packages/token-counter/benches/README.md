@@ -20,7 +20,7 @@ it's not a dependency of the package itself.)
 |---|---|
 | `throughput_bench.py` | `count_tokens` MB/s across input sizes (1MB-1GB of normal prose). |
 | `memory_bench.py` | Peak process memory relative to input size, at the same sizes. Each size runs in its own subprocess, since peak-memory counters only ever grow over a process's lifetime. |
-| `pathological_bench.py` | Throughput on known-adversarial patterns (long unbroken runs, long digit sequences) against a normal-prose baseline -- flags a regression if the ratio drops below 10%. |
+| `pathological_bench.py` | The scaling exponent of time vs. size for known-adversarial patterns (long unbroken runs, long digit sequences), against a normal-prose baseline. Flags a regression only if the exponent crosses a threshold well above the known-accepted worst case -- see below for why a single-size ratio check doesn't work here. |
 
 Run any of them directly:
 
@@ -32,17 +32,69 @@ uv run --group bench python benches/pathological_bench.py
 
 ## What we found running these
 
-On the pinned `tiktoken` version and `o200k_base`:
+Measured against the pinned `tiktoken` version and `o200k_base`.
 
-- Throughput is linear, ~70MB/s, from 1MB through 1GB -- no algorithmic cliff.
-- Peak memory is ~9.5x the input file's byte size (dominated by the returned
-  token list: one Python `int` object per token, not the input string).
-- Neither adversarial pattern tested (long no-whitespace runs, long digit runs --
-  both historically known to cause catastrophic regex backtracking in some
-  tokenizer implementations) triggers a throughput cliff on this version.
+### Throughput
 
-So in practice, the tool's upper bound on file size is set by available RAM
-(`~9.5 x file size` must fit), not by pathological input content. There's no
-guard against this in `token_counter` itself (see `R17` in the project's design
-notes) -- a file too large for available memory degrades into OS-level paging
-long before a clean error, rather than failing fast.
+| Input size | Time | Rate |
+|---:|---:|---:|
+| 1 MB | 0.016 s | 63.8 MB/s |
+| 10 MB | 0.155 s | 64.6 MB/s |
+| 100 MB | 1.541 s | 64.9 MB/s |
+| 500 MB | 7.857 s | 63.6 MB/s |
+| 1000 MB | 15.215 s | 65.7 MB/s |
+
+Flat rate across three orders of magnitude -- linear, no algorithmic cliff.
+
+### Peak memory
+
+| Input size | Peak memory | Multiple of input |
+|---:|---:|---:|
+| 1 MB | 96.0 MB | 96.0x |
+| 10 MB | 184.4 MB | 18.4x |
+| 100 MB | 1,068.4 MB | 10.7x |
+| 500 MB | 4,998.4 MB | 10.0x |
+| 1000 MB | 9,911.1 MB | 9.9x |
+
+The multiple falls as size grows because a fixed cost (interpreter startup +
+loading `o200k_base`'s encoding table) dominates at small sizes but is negligible
+at large ones. Fitting peak memory $M$ (MB) as a linear function of input size $S$
+(MB) by least squares against the table above:
+
+$$
+M(S) \approx k \cdot S + C, \qquad k \approx 9.8, \qquad C \approx 85\text{ MB}
+$$
+
+$k$ is the per-byte cost -- dominated by the returned token list, one Python `int`
+object per token, not the input string. $C$ is the fixed startup cost.
+
+**Upper bound.** Solving for the largest input size that fits in free memory $M_{\text{free}}$:
+
+$$
+S_{\max} \approx \frac{M_{\text{free}} - C}{k}
+$$
+
+This is a property of the machine running `token-counter` at the time, not a
+constant in the code -- `token_counter` reads each file fully into memory with no
+size guard (`R17` in the project's design notes), so nothing stops an attempt at a
+file larger than $S_{\max}$. Past that point it degrades into OS-level paging well
+before a clean error, rather than failing fast.
+
+### Adversarial patterns
+
+| Pattern | Scaling exponent | Rate @ 16 MB |
+|---|---:|---:|
+| Normal prose | 1.02 | 66.8 MB/s |
+| Repeated digit run | 1.01 | 29.5 MB/s |
+| Repeated char, no whitespace | 1.19 | 3.2 MB/s |
+
+Exponent $\approx 1.0$ is linear (time doubles when size doubles); tiktoken has a
+documented history of some inputs pushing this toward quadratic-or-worse
+(historically exponential) via catastrophic regex backtracking. Neither pattern
+tested does that here -- the repeated-char case is a real, legitimate ~20x
+slowdown per byte (it forms one unbreakable "word" needing many BPE merge
+passes), but its *growth rate* stays mildly super-linear (1.19), not
+catastrophic. `pathological_bench.py`'s regression threshold (1.6) has headroom
+above this measured baseline specifically so a real regression toward
+quadratic-or-worse behavior gets flagged without false-triggering on this
+already-known, bounded characteristic.

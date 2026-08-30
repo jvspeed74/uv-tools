@@ -1,49 +1,77 @@
-"""Regression check: adversarial text patterns must not blow up throughput.
+"""Regression check: adversarial text patterns must not blow up algorithmically.
 
 tiktoken has a documented history of catastrophic regex behavior on long
-unbroken runs of text (no whitespace, long digit sequences). This compares
-throughput on those patterns against normal prose -- a large gap would flag
-a regression, e.g. from a tiktoken upgrade reintroducing the old behavior.
+unbroken runs of text (no whitespace, long digit sequences). Comparing a
+single size against a normal-prose baseline is the wrong signal here: a long
+run of one repeated character is *legitimately* far slower per byte than
+normal prose (it forms one unbreakable "word" needing many BPE merge
+passes), and that gap widens somewhat with size even under expected,
+non-regressed behavior -- a fixed size + fixed ratio-to-baseline threshold
+will eventually trip on its own, with no actual regression.
+
+What distinguishes "expected, bounded slowdown" from "catastrophic
+regression" is the growth curve, not a single measurement: does time scale
+roughly linearly (or a mild, bounded polynomial) with input size, or does it
+blow up much faster (quadratic-or-worse, historically exponential)? So each
+pattern is measured across several sizes and the empirical scaling exponent
+(least-squares slope of log(time) vs log(size)) is compared against a
+threshold with headroom above the known-accepted worst case -- see
+benches/README.md for the measurements this was calibrated against.
 
 Run: uv run --group bench python benches/pathological_bench.py
 """
 
+import math
 import time
+from collections.abc import Callable
 
 import tiktoken
 from _generators import normal_text, repeated_char_text, repeated_digit_text
 from token_counter.tokenizer import count_tokens, load_encoding
 
-_SIZE_MB = 5
-_MIN_ACCEPTABLE_RATE_FRACTION = 0.1  # adversarial rate must stay within 10x of baseline
+_SIZES_MB = [1, 2, 4, 8, 16]
+_MAX_ACCEPTABLE_EXPONENT = 1.6  # linear is 1.0; known worst case (repeated-char) is ~1.2
 
 
-def _rate_mb_s(text: str, encoding: tiktoken.Encoding) -> float:
-    size_mb = len(text) / 1e6
+def _time_seconds(text: str, encoding: tiktoken.Encoding) -> float:
     start = time.perf_counter()
     count_tokens(text, encoding)
-    elapsed = time.perf_counter() - start
-    return size_mb / elapsed
+    return time.perf_counter() - start
+
+
+def _scaling_exponent(sizes_bytes: list[int], times: list[float]) -> float:
+    """Least-squares slope of log(time) vs log(size) -- the empirical growth rate.
+
+    ~1.0 means linear (time doubles when size doubles). Higher means
+    super-linear; this is what flags a return to quadratic-or-worse
+    tokenizer behavior on adversarial input.
+    """
+    xs = [math.log(s) for s in sizes_bytes]
+    ys = [math.log(t) for t in times]
+    mean_x = sum(xs) / len(xs)
+    mean_y = sum(ys) / len(ys)
+    numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys, strict=True))
+    denominator = sum((x - mean_x) ** 2 for x in xs)
+    return numerator / denominator
 
 
 def main() -> None:
     encoding = load_encoding()
-    size_bytes = _SIZE_MB * 1_000_000
+    sizes_bytes = [mb * 1_000_000 for mb in _SIZES_MB]
 
-    patterns = {
-        "normal prose": normal_text(size_bytes),
-        "repeated char (no whitespace)": repeated_char_text(size_bytes),
-        "repeated digit run": repeated_digit_text(size_bytes),
+    generators: dict[str, Callable[[int], str]] = {
+        "normal prose": normal_text,
+        "repeated char (no whitespace)": repeated_char_text,
+        "repeated digit run": repeated_digit_text,
     }
 
-    rates = {name: _rate_mb_s(text, encoding) for name, text in patterns.items()}
-    baseline = rates["normal prose"]
-
-    print(f"{'pattern':<32}{'rate':>10}  {'vs baseline':>12}")
-    for name, rate in rates.items():
-        ratio = rate / baseline
-        flag = "" if ratio >= _MIN_ACCEPTABLE_RATE_FRACTION else "  <-- REGRESSION"
-        print(f"{name:<32}{rate:>8.1f}MB/s  {ratio:>10.2f}x{flag}")
+    print(f"{'pattern':<32}{'exponent':>10}  {'rate @ max size':>18}")
+    for name, generate in generators.items():
+        times = [_time_seconds(generate(size), encoding) for size in sizes_bytes]
+        exponent = _scaling_exponent(sizes_bytes, times)
+        rate = (sizes_bytes[-1] / 1e6) / times[-1]
+        flag = "" if exponent <= _MAX_ACCEPTABLE_EXPONENT else "  <-- REGRESSION"
+        print(f"{name:<32}{exponent:>10.2f}  {rate:>15.1f}MB/s{flag}")
 
 
 if __name__ == "__main__":
