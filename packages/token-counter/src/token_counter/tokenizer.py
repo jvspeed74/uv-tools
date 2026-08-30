@@ -13,9 +13,7 @@ _DEFAULT_ENCODING_NAME = "o200k_base"
 class SupportsEncode(Protocol):
     """Structural contract for count_tokens: anything with a compatible .encode().
 
-    tiktoken.Encoding satisfies this structurally. Depending on the Protocol
-    instead of the concrete class lets tests supply a stub encoding without
-    constructing a real one (§5, python-coder-v2).
+    tiktoken.Encoding satisfies this structurally.
     """
 
     def encode(self, text: str, *, disallowed_special: object = ...) -> Sequence[int]: ...
