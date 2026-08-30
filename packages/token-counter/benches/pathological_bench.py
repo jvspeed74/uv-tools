@@ -1,22 +1,13 @@
-"""Regression check: adversarial text patterns must not blow up algorithmically.
+"""Regression check: adversarial input patterns must not blow up algorithmically.
 
-tiktoken has a documented history of catastrophic regex behavior on long
-unbroken runs of text (no whitespace, long digit sequences). Comparing a
-single size against a normal-prose baseline is the wrong signal here: a long
-run of one repeated character is *legitimately* far slower per byte than
-normal prose (it forms one unbreakable "word" needing many BPE merge
-passes), and that gap widens somewhat with size even under expected,
-non-regressed behavior -- a fixed size + fixed ratio-to-baseline threshold
-will eventually trip on its own, with no actual regression.
-
-What distinguishes "expected, bounded slowdown" from "catastrophic
-regression" is the growth curve, not a single measurement: does time scale
-roughly linearly (or a mild, bounded polynomial) with input size, or does it
-blow up much faster (quadratic-or-worse, historically exponential)? So each
-pattern is measured across several sizes and the empirical scaling exponent
-(least-squares slope of log(time) vs log(size)) is compared against a
-threshold with headroom above the known-accepted worst case -- see
-benches/README.md for the measurements this was calibrated against.
+tiktoken has a documented history of catastrophic regex backtracking on long
+unbroken text runs (no whitespace, long digit sequences). Each pattern is
+measured across several sizes, and its scaling exponent -- the least-squares
+slope of log(time) vs log(size) -- is compared against a threshold set with
+headroom above the known, accepted worst case (see benches/README.md for the
+calibration data). Linear is ~1.0; a real regression toward
+quadratic-or-worse behavior pushes this well past the threshold, which a
+single-size ratio against a baseline would miss or false-trigger on.
 
 Run: uv run --group bench python benches/pathological_bench.py
 """
