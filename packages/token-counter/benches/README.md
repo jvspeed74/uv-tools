@@ -87,9 +87,9 @@ $$
 
 This is a property of the machine running `token-counter` at the time, not a
 constant in the code -- `token_counter` reads each file fully into memory with no
-size guard (`R17` in the project's design notes), so nothing stops an attempt at a
-file larger than $S_{\max}$. Past that point it degrades into OS-level paging well
-before a clean error, rather than failing fast.
+size guard, so nothing stops an attempt at a file larger than $S_{\max}$. Past
+that point it degrades into OS-level paging well before a clean error, rather
+than failing fast.
 
 ### Adversarial patterns
 
