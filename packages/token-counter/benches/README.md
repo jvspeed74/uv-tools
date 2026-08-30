@@ -58,17 +58,28 @@ Flat rate across three orders of magnitude -- linear, no algorithmic cliff.
 
 The multiple falls as size grows because a fixed cost (interpreter startup +
 loading `o200k_base`'s encoding table) dominates at small sizes but is negligible
-at large ones. Fitting peak memory $M$ (MB) as a linear function of input size $S$
-(MB) by least squares against the table above:
+at large ones.
+
+#### Variables
+
+- $S$ -- input file size, in megabytes.
+- $M(S)$ -- peak process memory as a function of $S$, in megabytes. Fitted by
+  least squares against the table above.
+- $k$ -- the per-megabyte memory cost. Dominated by the returned token list
+  (one Python `int` object per token), not the input string itself.
+- $C$ -- the fixed memory cost independent of input size (interpreter startup
+  + loading `o200k_base`'s encoding table).
+- $M_{\text{free}}$ -- free memory on the machine running `token-counter`, in
+  megabytes, at the time it runs.
+- $S_{\max}$ -- the largest input size that fits within $M_{\text{free}}$.
+
+Fitting $M(S)$ as linear in $S$:
 
 $$
 M(S) \approx k \cdot S + C, \qquad k \approx 9.8, \qquad C \approx 85\text{ MB}
 $$
 
-$k$ is the per-byte cost -- dominated by the returned token list, one Python `int`
-object per token, not the input string. $C$ is the fixed startup cost.
-
-**Upper bound.** Solving for the largest input size that fits in free memory $M_{\text{free}}$:
+**Upper bound.** Solving for $S_{\max}$:
 
 $$
 S_{\max} \approx \frac{M_{\text{free}} - C}{k}
