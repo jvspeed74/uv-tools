@@ -6,24 +6,7 @@ from pathlib import Path
 
 from token_counter.errors import PathNotFoundError
 
-__all__ = ["DEFAULT_IGNORE_NAMES", "discover_files", "read_text_file"]
-
-DEFAULT_IGNORE_NAMES: frozenset[str] = frozenset(
-    {
-        ".git",
-        ".venv",
-        "venv",
-        "__pycache__",
-        "node_modules",
-        ".mypy_cache",
-        ".ruff_cache",
-        ".pytest_cache",
-        "dist",
-        "build",
-        ".idea",
-        ".vscode",
-    }
-)
+__all__ = ["discover_files", "read_text_file"]
 
 
 def discover_files(

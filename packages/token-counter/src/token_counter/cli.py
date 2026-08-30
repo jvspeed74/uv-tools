@@ -8,7 +8,7 @@ from pathlib import Path
 from token_counter.counts import FileTokenCount, sort_file_token_counts_desc
 from token_counter.errors import PathNotFoundError
 from token_counter.format import OutputFormat, format_counts, parse_output_format
-from token_counter.scan import DEFAULT_IGNORE_NAMES, discover_files, read_text_file
+from token_counter.scan import discover_files, read_text_file
 from token_counter.tokenizer import count_tokens, load_encoding
 
 __all__ = ["main"]
@@ -44,14 +44,6 @@ def _build_arg_parser() -> argparse.ArgumentParser:
             "argument, even if its own name matches."
         ),
     )
-    parser.add_argument(
-        "--all",
-        action="store_true",
-        help=(
-            "Disable the default ignore-set (.git, .venv, node_modules, etc). "
-            "--ignore names still apply."
-        ),
-    )
     return parser
 
 
@@ -65,8 +57,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser = _build_arg_parser()
     args = parser.parse_args(argv)
     fmt = parse_output_format(args.format)
-    default_names: frozenset[str] = frozenset() if args.all else DEFAULT_IGNORE_NAMES
-    ignore_names: frozenset[str] = frozenset(args.ignore or ()) | default_names
+    ignore_names: frozenset[str] = frozenset(args.ignore or ())
 
     try:
         discovered = discover_files(args.paths, ignore_names=ignore_names)

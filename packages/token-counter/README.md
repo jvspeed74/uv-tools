@@ -22,7 +22,7 @@ without reinstalling.
 ## Usage
 
 ```bash
-token-counter <path> [<path> ...] [-f {table,csv,json}] [-i NAME ...] [--all]
+token-counter <path> [<path> ...] [-f {table,csv,json}] [-i NAME ...]
 ```
 
 `<path>` can be any mix of files and directories; directories are scanned recursively.
@@ -46,7 +46,6 @@ $ token-counter src
 |---|---|
 | `-f, --format {table,csv,json}` | Output format. Default: `table`. |
 | `-i, --ignore NAME` | A file or directory name to ignore during recursion. Repeatable: `-i node_modules -i .venv`. Never applies to a path you named directly on the command line, even if its own name matches. |
-| `--all` | Include files normally skipped by the default ignore-set (see below). `-i`/`--ignore` names still apply. |
 | `-h, --help` | Show usage and exit. |
 
 ### Output formats
@@ -79,13 +78,11 @@ tokens,path
 
 - **Non-UTF-8 files** (images, binaries, compiled artifacts) are skipped with a
   warning on stderr — the run continues.
-- **A default set of noise directories** is skipped during recursion:
-  `.git`, `.venv`, `venv`, `__pycache__`, `node_modules`, `.mypy_cache`,
-  `.ruff_cache`, `.pytest_cache`, `dist`, `build`, `.idea`, `.vscode`.
-  Pass `--all` to include them.
+- **Names passed via `-i`/`--ignore`** are skipped during recursion. There is no
+  default ignore-set — nothing is skipped unless you say so.
 - A path you name **directly** on the command line is always scanned, even if its
-  name matches something in the default ignore-set or an `--ignore` name — ignoring
-  only applies to what recursion *finds*, not to what you explicitly asked for.
+  name matches an `--ignore` name — ignoring only applies to what recursion
+  *finds*, not to what you explicitly asked for.
 
 ### Exit codes
 
