@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from token_counter.cli import main
 
 # Precomputed real o200k_base token counts for tests/fixtures content.

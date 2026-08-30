@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import pytest
-
 from token_counter.errors import PathNotFoundError
 from token_counter.scan import discover_files, read_text_file
 

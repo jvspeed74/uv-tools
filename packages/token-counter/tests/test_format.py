@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from token_counter.counts import FileTokenCount, SortedCounts
 from token_counter.format import InvalidOutputFormatError, format_counts, parse_output_format
 

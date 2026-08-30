@@ -8,7 +8,6 @@ never touch the network -- the unit tier stays hermetic.
 from collections.abc import Sequence
 
 import pytest
-
 from token_counter.tokenizer import SupportsEncode, count_tokens
 
 

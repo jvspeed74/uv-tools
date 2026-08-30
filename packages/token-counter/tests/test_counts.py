@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import pytest
-
 from token_counter.counts import FileTokenCount, sort_file_token_counts_desc
 
 
