@@ -35,12 +35,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-i",
         "--ignore",
-        nargs="+",
-        default=(),
+        action="append",
+        default=None,
         metavar="NAME",
         help=(
-            "One or more file/directory names to ignore during recursion. "
-            "Never applies to a top-level path argument, even if its own name matches."
+            "A file/directory name to ignore during recursion. Repeatable "
+            "(-i NAME -i NAME2 ...). Never applies to a top-level path "
+            "argument, even if its own name matches."
         ),
     )
     parser.add_argument(
@@ -64,7 +65,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser = _build_arg_parser()
     args = parser.parse_args(argv)
     fmt = parse_output_format(args.format)
-    ignore_names = frozenset(args.ignore) | (frozenset() if args.all else DEFAULT_IGNORE_NAMES)
+    default_names = frozenset() if args.all else DEFAULT_IGNORE_NAMES
+    ignore_names = frozenset(args.ignore or ()) | default_names
 
     try:
         discovered = discover_files(args.paths, ignore_names=ignore_names)

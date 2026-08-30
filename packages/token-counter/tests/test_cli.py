@@ -108,3 +108,33 @@ def test_main_skips_binary_fixture_with_stderr_warning(
 
     assert str(fixtures_dir / "binary.bin") not in paths
     assert "binary.bin" in captured.err
+
+
+@pytest.mark.e2e
+def test_main_accepts_ignore_flag_before_positional_paths(
+    fixtures_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Regression test: -i/--ignore used to be nargs="+", which greedily
+    # swallowed the positional paths when --ignore came first, so
+    # `token-counter --ignore NAME path` failed with "paths" required.
+    main(["-i", "nested", str(fixtures_dir), "--format", "json"])
+
+    records = json.loads(capsys.readouterr().out)
+    paths = {record["path"] for record in records}
+
+    assert str(fixtures_dir / "nested" / "deeper.txt") not in paths
+    assert str(fixtures_dir / "short.txt") in paths
+
+
+@pytest.mark.e2e
+def test_main_ignore_flag_is_repeatable(
+    fixtures_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    main([str(fixtures_dir), "-i", "nested", "-i", "short.txt", "--format", "json"])
+
+    records = json.loads(capsys.readouterr().out)
+    paths = {record["path"] for record in records}
+
+    assert str(fixtures_dir / "nested" / "deeper.txt") not in paths
+    assert str(fixtures_dir / "short.txt") not in paths
+    assert str(fixtures_dir / "medium.txt") in paths
