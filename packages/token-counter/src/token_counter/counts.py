@@ -23,14 +23,7 @@ def _sort_key(count: FileTokenCount) -> tuple[int, Path]:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class SortedFileTokenCounts:
-    """FileTokenCount entries validated to be sorted descending by token
-    count (ties broken by ascending path).
-
-    The invariant is checked at construction, on every path -- not only
-    through sort_file_token_counts_desc -- so a caller that constructs one
-    directly from unsorted data gets UnsortedCountsError immediately rather
-    than a type checker's unenforced say-so.
-    """
+    """A collection of FileTokenCount records, sorted descending by token count."""
 
     counts: tuple[FileTokenCount, ...]
 
