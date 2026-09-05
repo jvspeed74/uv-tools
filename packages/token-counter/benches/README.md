@@ -30,9 +30,16 @@ uv run --group bench python benches/memory_bench.py
 uv run --group bench python benches/pathological_bench.py
 ```
 
-## What we found running these
+## Empirical Results
 
 Measured against the pinned `tiktoken` version and `o200k_base`.
+
+System specs:
+- CPU: 12th Gen Intel(R) Core(TM) i7-12700K, 3600 Mhz, 12 Core(s), 20 Logical Processor(s)
+- RAM: 32 GB @ 3200 MHz
+- OS: Ubuntu 24.04.4 LTS
+- Python: 3.13 (64-bit)
+- Storage: WDC WDS100T2B0A-00SM50 (Page file: Yes)
 
 ### Throughput
 
