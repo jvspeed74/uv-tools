@@ -41,7 +41,6 @@ System specs:
 - Python: 3.13 (64-bit)
 - Storage: WDC WDS100T2B0A-00SM50 (Page file: Yes)
 
-
 ### Throughput
 
 | Input size | Time | Rate |
